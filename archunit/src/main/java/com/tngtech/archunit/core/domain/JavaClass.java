@@ -100,6 +100,7 @@ public class JavaClass implements JavaType, HasName.AndFullName, HasAnnotations<
         }
     });
     private JavaClassDependencies javaClassDependencies = new JavaClassDependencies(this);  // just for stubs; will be overwritten for imported classes
+    private boolean imported = false;
 
     JavaClass(JavaClassBuilder builder) {
         source = checkNotNull(builder.getSource());
@@ -1077,6 +1078,14 @@ public class JavaClass implements JavaType, HasName.AndFullName, HasAnnotations<
     }
 
     /**
+     * @return Whether this class has actually been imported (or is just a stub).
+     */
+    @PublicAPI(usage = ACCESS)
+    public boolean isImported() {
+        return imported;
+    }
+
+    /**
      * @param clazz An arbitrary type
      * @return true, if this {@link JavaClass} represents the same class as the supplied {@link Class}, otherwise false
      */
@@ -1222,6 +1231,7 @@ public class JavaClass implements JavaType, HasName.AndFullName, HasAnnotations<
     CompletionProcess completeFrom(ImportContext context) {
         completeComponentType(context);
         javaClassDependencies = new JavaClassDependencies(this, context);
+        imported = true;
         return new CompletionProcess();
     }
 

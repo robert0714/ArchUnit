@@ -640,7 +640,7 @@ public class JavaClassTest {
     }
 
     @Test
-    public void stubs_have_empty_dependencies() {
+    public void stubs_have_empty_dependencies_and_are_not_imported() {
         class Element {
         }
         class DependsOnArray {
@@ -651,6 +651,9 @@ public class JavaClassTest {
         JavaClass additionallyImportedClass = directlyImportedClass.getField("array").getRawType();  // Element[]
         JavaClass stub = additionallyImportedClass.getComponentType();  // Element
 
+        assertThat(directlyImportedClass.isImported()).isTrue();
+        assertThat(additionallyImportedClass.isImported()).isTrue();
+        assertThat(stub.isImported()).isFalse();
         assertThat(stub.getDirectDependenciesFromSelf()).isEmpty();
         assertThat(stub.getDirectDependenciesToSelf()).isEmpty();
         assertThat(stub.getFieldsWithTypeOfSelf()).isEmpty();
