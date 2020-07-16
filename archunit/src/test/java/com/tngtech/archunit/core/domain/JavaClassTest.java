@@ -12,6 +12,7 @@ import java.util.Set;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.tngtech.archunit.ArchConfiguration;
 import com.tngtech.archunit.base.ArchUnitException.InvalidSyntaxUsageException;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.base.HasDescription;
@@ -27,6 +28,7 @@ import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.testexamples.arrays.ClassAccessingOneDimensionalArray;
 import com.tngtech.archunit.core.importer.testexamples.arrays.ClassAccessingTwoDimensionalArray;
 import com.tngtech.archunit.core.importer.testexamples.arrays.ClassUsedInArray;
+import com.tngtech.archunit.testutil.ArchConfigurationRule;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -84,6 +86,8 @@ import static org.mockito.Mockito.when;
 public class JavaClassTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+    @Rule
+    public ArchConfigurationRule archConfiguration = new ArchConfigurationRule();
 
     @Test
     public void finds_array_type() {
@@ -633,6 +637,29 @@ public class JavaClassTest {
     private Set<JavaClass> getOriginsOfDependenciesTo(JavaClass withType) {
         return FluentIterable.from(withType.getDirectDependenciesToSelf())
                 .transform(toGuava(GET_ORIGIN_CLASS)).toSet();
+    }
+
+    @Test
+    public void stubs_have_empty_dependencies() {
+        class Element {
+        }
+        class DependsOnArray {
+            Element[] array;
+        }
+        ArchConfiguration.get().setResolveMissingDependenciesFromClassPath(false);
+        JavaClass directlyImportedClass = new ClassFileImporter().importClasses(DependsOnArray.class).get(DependsOnArray.class);
+        JavaClass additionallyImportedClass = directlyImportedClass.getField("array").getRawType();  // Element[]
+        JavaClass stub = additionallyImportedClass.getComponentType();  // Element
+
+        assertThat(stub.getDirectDependenciesFromSelf()).isEmpty();
+        assertThat(stub.getDirectDependenciesToSelf()).isEmpty();
+        assertThat(stub.getFieldsWithTypeOfSelf()).isEmpty();
+        assertThat(stub.getMethodsWithParameterTypeOfSelf()).isEmpty();
+        assertThat(stub.getMethodsWithReturnTypeOfSelf()).isEmpty();
+        assertThat(stub.getMethodThrowsDeclarationsWithTypeOfSelf()).isEmpty();
+        assertThat(stub.getConstructorsWithParameterTypeOfSelf()).isEmpty();
+        assertThat(stub.getConstructorsWithThrowsDeclarationTypeOfSelf()).isEmpty();
+        assertThat(stub.getAnnotationsWithTypeOfSelf()).isEmpty();
     }
 
     @Test

@@ -27,6 +27,7 @@ import com.tngtech.archunit.core.domain.properties.HasAnnotations;
 
 import static com.google.common.base.Suppliers.memoize;
 import static com.google.common.collect.Sets.union;
+import static java.util.Collections.emptySet;
 
 class JavaClassDependencies {
     private final JavaClass javaClass;
@@ -38,8 +39,21 @@ class JavaClassDependencies {
     private final Set<ThrowsDeclaration<JavaConstructor>> constructorsWithThrowsDeclarationTypeOfClass;
     private final Set<JavaAnnotation<?>> annotationsWithTypeOfClass;
     private final Set<JavaAnnotation<?>> annotationsWithParameterTypeOfClass;
-    private final Supplier<Set<Dependency>> directDependenciesFromClass;
-    private final Supplier<Set<Dependency>> directDependenciesToClass;
+    private final Supplier<Set<Dependency>> directDependenciesFromClass = getDirectDependenciesFromClassSupplier();
+    private final Supplier<Set<Dependency>> directDependenciesToClass = getDirectDependenciesToClassSupplier();
+
+    /** for stubs that are not imported */
+    JavaClassDependencies(JavaClass javaClass) {
+        this.javaClass = javaClass;
+        this.fieldsWithTypeOfClass = emptySet();
+        this.methodsWithParameterTypeOfClass = emptySet();
+        this.methodsWithReturnTypeOfClass = emptySet();
+        this.methodsWithThrowsDeclarationTypeOfClass = emptySet();
+        this.constructorsWithParameterTypeOfClass = emptySet();
+        this.constructorsWithThrowsDeclarationTypeOfClass = emptySet();
+        this.annotationsWithTypeOfClass = emptySet();
+        this.annotationsWithParameterTypeOfClass = emptySet();
+    }
 
     JavaClassDependencies(JavaClass javaClass, ImportContext context) {
         this.javaClass = javaClass;
@@ -51,8 +65,6 @@ class JavaClassDependencies {
         this.constructorsWithThrowsDeclarationTypeOfClass = context.getConstructorThrowsDeclarationsOfType(javaClass);
         this.annotationsWithTypeOfClass = context.getAnnotationsOfType(javaClass);
         this.annotationsWithParameterTypeOfClass = context.getAnnotationsWithParameterOfType(javaClass);
-        this.directDependenciesFromClass = getDirectDependenciesFromClassSupplier();
-        this.directDependenciesToClass = getDirectDependenciesToClassSupplier();
     }
 
     private Supplier<Set<Dependency>> getDirectDependenciesFromClassSupplier() {
