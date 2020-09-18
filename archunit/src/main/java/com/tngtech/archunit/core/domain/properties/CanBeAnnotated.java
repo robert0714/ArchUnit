@@ -19,12 +19,15 @@ import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.tngtech.archunit.PublicAPI;
 import com.tngtech.archunit.base.ArchUnitException.InvalidSyntaxUsageException;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.base.Function;
 import com.tngtech.archunit.core.domain.JavaAnnotation;
+import com.tngtech.archunit.core.domain.JavaClass;
 
 import static com.tngtech.archunit.PublicAPI.Usage.ACCESS;
 import static com.tngtech.archunit.base.DescribedPredicate.equalTo;
@@ -157,7 +160,34 @@ public interface CanBeAnnotated {
                 DescribedPredicate<? super JavaAnnotation<?>> predicate) {
 
             for (JavaAnnotation<?> annotation : annotations) {
-                if (annotation.getRawType().isAnnotatedWith(predicate) || annotation.getRawType().isMetaAnnotatedWith(predicate)) {
+                if (annotation.getRawType().isAnnotatedWith(predicate)) {
+                    return true;
+                } else {
+                    Set<String> visitedAnnotations = new HashSet<>();
+                    if (isNonCyclicMetaAnnotatedWith(annotation, visitedAnnotations, predicate)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private static boolean isNonCyclicMetaAnnotatedWith(JavaAnnotation<?> annotation,
+                                                            Set<String> visitedAnnotations,
+                                                            DescribedPredicate<? super JavaAnnotation<?>> predicate) {
+
+            visitedAnnotations.add(annotation.getRawType().getName());
+            Set<JavaAnnotation<JavaClass>> metaAnnotations = annotation.getRawType().getAnnotations();
+
+            if (isAnnotatedWith(metaAnnotations, predicate)) {
+                return true;
+            }
+
+            for (JavaAnnotation<?> metaAnnotation : metaAnnotations) {
+                if (visitedAnnotations.contains(metaAnnotation.getRawType().getName())) {
+                    return false;
+                }
+                else if (isNonCyclicMetaAnnotatedWith(metaAnnotation, visitedAnnotations, predicate)) {
                     return true;
                 }
             }

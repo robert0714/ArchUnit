@@ -935,6 +935,15 @@ public class JavaClassTest {
                 .rejects(classes.get(getClass()));
     }
 
+    @Test
+    public void cyclic_annotations_are_not_searched_through_other_annotations_infinitely() {
+        JavaClass javaClass = importClasses(ClassWithCyclicMetaAnnotation.class,
+                AnnotationWithCyclicAnnotation.class,
+                Retention.class).get(ClassWithCyclicMetaAnnotation.class);
+
+        assertThat(javaClass.isMetaAnnotatedWith(UnusedAnnotation.class)).isFalse();
+    }
+
     private JavaClass getOnlyClassSettingField(JavaClasses classes, final String fieldName) {
         return getOnlyElement(classes.that(new DescribedPredicate<JavaClass>("") {
             @Override
@@ -1461,6 +1470,17 @@ public class JavaClassTest {
 
     enum SomeEnumAsAnnotationArrayParameter {
         ANNOTATION_ARRAY_PARAMETER
+    }
+
+    @Retention(RUNTIME)
+    @interface AnnotationWithCyclicAnnotation {
+    }
+
+    @AnnotationWithCyclicAnnotation
+    private static class ClassWithCyclicMetaAnnotation {
+    }
+
+    @interface UnusedAnnotation {
     }
 
     @SuppressWarnings("ALL")
