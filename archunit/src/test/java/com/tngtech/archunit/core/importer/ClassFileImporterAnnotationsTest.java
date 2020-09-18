@@ -33,7 +33,10 @@ public class ClassFileImporterAnnotationsTest {
     @DataProvider
     public static Object[][] elementsAnnotatedWithSomeAnnotation() {
         return testForEach(
-                new ClassFileImporter().importClass(MetaAnnotatedClass.class)
+                new ClassFileImporter().importClass(MetaAnnotatedClass.class),
+                new ClassFileImporter().importClass(ClassWithMetaAnnotatedField.class).getField("metaAnnotatedField"),
+                new ClassFileImporter().importClass(ClassWithMetaAnnotatedMethod.class).getMethod("metaAnnotatedMethod"),
+                new ClassFileImporter().importClass(ClassWithMetaAnnotatedConstructor.class).getConstructor()
         );
     }
 
@@ -109,6 +112,26 @@ public class ClassFileImporterAnnotationsTest {
 
     @SomeAnnotation
     private static class MetaAnnotatedClass {
+    }
+
+    @SuppressWarnings("unused")
+    private static class ClassWithMetaAnnotatedField {
+        @SomeAnnotation
+        int metaAnnotatedField;
+    }
+
+    @SuppressWarnings("unused")
+    private static class ClassWithMetaAnnotatedMethod {
+        @SomeAnnotation
+        void metaAnnotatedMethod() {
+        }
+    }
+
+    @SuppressWarnings("unused")
+    private static class ClassWithMetaAnnotatedConstructor {
+        @SomeAnnotation
+        ClassWithMetaAnnotatedConstructor() {
+        }
     }
 
     private static class SomeMetaMetaMetaAnnotationClassParameter {
