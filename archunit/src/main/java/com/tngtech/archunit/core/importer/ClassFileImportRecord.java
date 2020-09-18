@@ -187,6 +187,14 @@ class ClassFileImportRecord {
         return ImmutableSet.copyOf(interfaceNamesByOwner.values());
     }
 
+    Set<String> getAllAnnotationNames() {
+        Set<String> annotationNames = new HashSet<>();
+        for (DomainBuilders.JavaAnnotationBuilder annotationBuilder : annotationsByOwner.values()) {
+            annotationNames.add(annotationBuilder.getTypeDescriptor().getFullyQualifiedClassName());
+        }
+        return annotationNames;
+    }
+
     // NOTE: ASM calls visitInnerClass and visitOuterClass several times, sometimes when the outer class is imported
     //       and sometimes again when the inner class is imported. To make it easier, we'll just deal with duplicate
     //       registrations, as there is no harm, as long as no conflicting information is recorded.

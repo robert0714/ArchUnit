@@ -48,6 +48,7 @@ import com.tngtech.archunit.core.domain.JavaStaticInitializer;
 import com.tngtech.archunit.core.domain.JavaTypeVariable;
 import com.tngtech.archunit.core.domain.ThrowsDeclaration;
 import com.tngtech.archunit.core.importer.AccessRecord.FieldAccessRecord;
+import com.tngtech.archunit.core.importer.DomainBuilders.JavaAnnotationBuilder;
 import com.tngtech.archunit.core.importer.DomainBuilders.JavaConstructorCallBuilder;
 import com.tngtech.archunit.core.importer.DomainBuilders.JavaFieldAccessBuilder;
 import com.tngtech.archunit.core.importer.DomainBuilders.JavaMethodCallBuilder;
@@ -153,12 +154,39 @@ class ClassGraphCreator implements ImportContext {
     }
 
     private void completeAnnotations() {
+        ensureAnnotationsHierarchy();
         for (JavaClass javaClass : classes.getAllWithOuterClassesSortedBeforeInnerClasses()) {
             DomainObjectCreationContext.completeAnnotations(javaClass, this);
             for (JavaMember member : concat(javaClass.getFields(), javaClass.getMethods(), javaClass.getConstructors())) {
                 memberDependenciesByTarget.registerAnnotations(member.getAnnotations());
             }
         }
+    }
+
+    private void ensureAnnotationsHierarchy() {
+        for (String annotation : importRecord.getAllAnnotationNames()) {
+            resolveAnnotations(annotation);
+        }
+    }
+
+    private void resolveAnnotations(String annotation) {
+        JavaClass javaClassOfAnnotation = classes.getOrResolve(annotation);
+        for (JavaAnnotationBuilder metaAnnotation : importRecord.getAnnotationsFor(javaClassOfAnnotation.getName())) {
+            String metaAnnotationName = metaAnnotation.getTypeDescriptor().getFullyQualifiedClassName();
+            if (isAlreadyImported(metaAnnotationName)) {
+                break;
+            }
+            resolveAnnotations(metaAnnotationName);
+        }
+    }
+
+    private boolean isAlreadyImported(String annotation) {
+        for (JavaClass javaClass : classes.getAllWithOuterClassesSortedBeforeInnerClasses()) {
+            if (javaClass.getFullName().equals(annotation)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private <T extends AccessRecord<?>, B extends RawAccessRecord> void tryProcess(

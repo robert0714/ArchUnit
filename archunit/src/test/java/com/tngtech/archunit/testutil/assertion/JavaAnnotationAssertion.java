@@ -12,13 +12,57 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.tngtech.archunit.base.Optional;
 import com.tngtech.archunit.core.domain.JavaAnnotation;
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaEnumConstant;
+import org.assertj.core.api.AbstractObjectAssert;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.tngtech.archunit.testutil.Assertions.assertThat;
+import static com.tngtech.archunit.testutil.Assertions.assertThatType;
 import static com.tngtech.archunit.testutil.TestUtils.invoke;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public class JavaAnnotationAssertion {
+public class JavaAnnotationAssertion extends AbstractObjectAssert<JavaAnnotationAssertion, JavaAnnotation<?>> {
+    public JavaAnnotationAssertion(JavaAnnotation<?> actual) {
+        super(actual, JavaAnnotationAssertion.class);
+    }
+
+    public JavaAnnotationAssertion hasClassProperty(String propertyName, Class<?> expectedClass) {
+        JavaClass actualClassValue = getPropertyOfType(propertyName, JavaClass.class);
+        assertThatType(actualClassValue).as("Class<?> @%s.%s()", actual.getRawType().getSimpleName(), propertyName).matches(expectedClass);
+        return this;
+    }
+
+    public JavaAnnotationAssertion withClassProperty(String propertyName, Class<?> expectedClass) {
+        return hasClassProperty(propertyName, expectedClass);
+    }
+
+    public JavaAnnotationAssertion hasEnumProperty(String propertyName, Enum<?> expectedEnumConstant) {
+        JavaEnumConstant actualEnumConstant = getPropertyOfType(propertyName, JavaEnumConstant.class);
+        assertThat(actualEnumConstant)
+                .as("%s @%s.%s()", actualEnumConstant.getDeclaringClass().getSimpleName(), actual.getRawType().getSimpleName(), propertyName)
+                .isEquivalentTo(expectedEnumConstant);
+        return this;
+    }
+
+    public JavaAnnotationAssertion hasAnnotationProperty(String propertyName, Class<? extends Annotation> expectedAnnotationType) {
+        JavaAnnotation<?> actualAnnotationProperty = getPropertyOfType(propertyName, JavaAnnotation.class);
+        assertThatType(actualAnnotationProperty.getType())
+                .as("%s @%s.%s()", actualAnnotationProperty.getRawType().getSimpleName(), actual.getRawType().getSimpleName(), propertyName)
+                .matches(expectedAnnotationType);
+        return new JavaAnnotationAssertion(actualAnnotationProperty);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T getPropertyOfType(String propertyName, Class<T> propertyType) {
+        Optional<?> property = actual.get(propertyName);
+        assertThat(property).as("property '%s'", property).isPresent();
+        assertThat(property.get()).as("property '%s'", property).isInstanceOf(propertyType);
+        return (T) property.get();
+    }
+
     @SuppressWarnings("rawtypes")
     public static Set<Map<String, Object>> runtimePropertiesOf(Set<? extends JavaAnnotation<?>> annotations) {
         List<Annotation> converted = new ArrayList<>();
